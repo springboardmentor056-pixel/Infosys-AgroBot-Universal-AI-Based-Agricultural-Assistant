@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-5 fw-bold mb-3">Analytics Dashboard</h1>
+                            <p class="lead mb-0">Platform insights and user behavior analytics</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="display-6 mb-2">{{ total_users }}</div>
+                            <small>Total Users</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Active Users (30D)</h6>
+                            <h4 class="mb-0">{{ active_users }}</h4>
+                            <small>{{ ((active_users / total_users) * 100)|round(1) if total_users > 0 else 0 }}% of total</small>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="bi bi-people-fill text-primary fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Avg Chats/User</h6>
+                            <h4 class="mb-0">{{ avg_chats_per_user }}</h4>
+                            <small>Last 30 days</small>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="bi bi-chat-dots-fill text-success fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Farmers</h6>
+                            <h4 class="mb-0">{{ User.query.filter_by(role='farmer').count() }}</h4>
+                            <small>{{ ((User.query.filter_by(role='farmer').count() / total_users) * 100)|round(1) if total_users > 0 else 0 }}%</small>
+                        </div>
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="bi bi-tree-fill text-warning fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Image Analyses</h6>
+                            <h4 class="mb-0">{{ ImageAnalysis.query.count() }}</h4>
+                            <small>Total processed</small>
+                        </div>
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="bi bi-camera-fill text-info fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <!-- User Growth Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">User Growth</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_growth %}
+                    <div class="chart-container" style="height: 250px;">
+                        <div class="d-flex align-items-end" style="height: 200px;">
+                            {% set max_users = user_growth|map(attribute='count')|max %}
+                            {% for day in user_growth[-14:] %}
+                            <div class="flex-fill text-center mx-1">
+                                <div class="bg-success rounded-top mx-auto" 
+                                     style="height: {{ (day.count / (max_users or 1)) * 180 }}px; width: 90%;"
+                                     data-bs-toggle="tooltip" title="{{ day.date }}: {{ day.count }} users">
+                                </div>
+                                <small class="text-muted d-block mt-1">{{ day.date.split('-')[-2:]|join('/') }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Daily user registrations (Last 14 days)</small>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-bar-chart text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No user growth data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Activity Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Chat Activity</h5>
+                </div>
+                <div class="card-body">
+                    {% if chat_activity %}
+                    <div class="chart-container" style="height: 250px;">
+                        <div class="d-flex align-items-end" style="height: 200px;">
+                            {% set max_chats = chat_activity|map(attribute='count')|max %}
+                            {% for day in chat_activity[-14:] %}
+                            <div class="flex-fill text-center mx-1">
+                                <div class="bg-info rounded-top mx-auto" 
+                                     style="height: {{ (day.count / (max_chats or 1)) * 180 }}px; width: 90%;"
+                                     data-bs-toggle="tooltip" title="{{ day.date }}: {{ day.count }} chats">
+                                </div>
+                                <small class="text-muted d-block mt-1">{{ day.date.split('-')[-2:]|join('/') }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Daily chat activity (Last 14 days)</small>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-chat-dots text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No chat activity data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Crops and Regions -->
+    <div class="row">
+        <!-- Top Crops -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Top Crops</h5>
+                    <small class="text-muted">Most popular crops among farmers</small>
+                </div>
+                <div class="card-body">
+                    {% if top_crops %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Crop</th>
+                                    <th>Farmers</th>
+                                    <th>Percentage</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for crop in top_crops %}
+                                <tr>
+                                    <td>{{ crop.primary_crop or 'Unknown' }}</td>
+                                    <td>{{ crop.user_count }}</td>
+                                    <td>
+                                        {{ ((crop.user_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 5px; width: 100px;">
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ ((crop.user_count / total_users) * 100) if total_users > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-tree text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No crop data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">User Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6>By Role</h6>
+                            <div class="mt-3">
+                                {% set farmers_count = User.query.filter_by(role='farmer').count() %}
+                                {% set admins_count = User.query.filter_by(role='admin').count() %}
+                                {% set agents_count = User.query.filter_by(role='agent').count() %}
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Farmers</span>
+                                        <span>{{ farmers_count }} ({{ ((farmers_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: {{ ((farmers_count / total_users) * 100) if total_users > 0 else 0 }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Admins</span>
+                                        <span>{{ admins_count }} ({{ ((admins_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-danger" style="width: {{ ((admins_count / total_users) * 100) if total_users > 0 else 0 }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Agents</span>
+                                        <span>{{ agents_count }} ({{ ((agents_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" style="width: {{ ((agents_count / total_users) * 100) if total_users > 0 else 0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <h6>By Status</h6>
+                            <div class="mt-3">
+                                {% set active_count = User.query.filter_by(is_active=True).count() %}
+                                {% set inactive_count = User.query.filter_by(is_active=False).count() %}
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Active</span>
+                                        <span>{{ active_count }} ({{ ((active_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: {{ ((active_count / total_users) * 100) if total_users > 0 else 0 }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Inactive</span>
+                                        <span>{{ inactive_count }} ({{ ((inactive_count / total_users) * 100)|round(1) if total_users > 0 else 0 }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-secondary" style="width: {{ ((inactive_count / total_users) * 100) if total_users > 0 else 0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Export -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Data Export</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-people-fill text-success mb-3" style="font-size: 2rem;"></i>
+                                    <h5>Users Data</h5>
+                                    <p class="text-muted">Export complete user database with all details</p>
+                                    <a href="{{ url_for('admin_export_users') }}" class="btn btn-success">
+                                        <i class="bi bi-download me-2"></i>Export Users
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-info h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-chat-dots-fill text-info mb-3" style="font-size: 2rem;"></i>
+                                    <h5>Chats Data</h5>
+                                    <p class="text-muted">Export recent chat conversations (up to 1000)</p>
+                                    <a href="{{ url_for('admin_export_chats') }}" class="btn btn-info text-white">
+                                        <i class="bi bi-download me-2"></i>Export Chats
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-warning h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-bar-chart-fill text-warning mb-3" style="font-size: 2rem;"></i>
+                                    <h5>Analytics Report</h5>
+                                    <p class="text-muted">Generate comprehensive analytics report</p>
+                                    <button class="btn btn-warning" onclick="generateReport()">
+                                        <i class="bi bi-file-earmark-text me-2"></i>Generate Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateReport() {
+    alert('Analytics report generation feature coming soon!');
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

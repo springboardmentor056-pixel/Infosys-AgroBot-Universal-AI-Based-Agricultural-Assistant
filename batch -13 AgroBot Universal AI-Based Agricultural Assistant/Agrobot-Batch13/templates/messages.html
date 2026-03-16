@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📨 Messages</h2>
+
+    <ul class="nav nav-tabs" id="messageTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab" aria-controls="received" aria-selected="true">
+                Received <span class="badge bg-secondary ms-1">{{ received|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab" aria-controls="sent" aria-selected="false">
+                Sent <span class="badge bg-secondary ms-1">{{ sent|length }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="messageTabsContent">
+        <!-- Received Messages -->
+        <div class="tab-pane fade show active" id="received" role="tabpanel" aria-labelledby="received-tab">
+            {% for msg in received %}
+            <div class="card mb-3 {% if not msg.is_read %}border-primary shadow-sm{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="card-title">
+                            <i class="bi bi-person-circle me-1"></i> {{ msg.sender.name }}
+                            <small class="text-muted ms-3">{{ msg.created_at | timeago }}</small>
+                        </h6>
+                        {% if not msg.is_read %}
+                            <a href="{{ url_for('mark_message_read', message_id=msg.id) }}" class="btn btn-sm btn-outline-success">Mark as read</a>
+                        {% endif %}
+                    </div>
+                    <p class="card-text mt-2">{{ msg.content }}</p>
+                    <a href="{{ url_for('send_message', recipient_id=msg.sender.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="bi bi-reply-fill me-1"></i>Reply
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">No received messages.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Sent Messages -->
+        <div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
+            {% for msg in sent %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-person-circle me-1"></i> To: {{ msg.recipient.name }}
+                        <small class="text-muted ms-3">{{ msg.created_at | timeago }}</small>
+                    </h6>
+                    <p class="card-text mt-2">{{ msg.content }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">No sent messages.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
